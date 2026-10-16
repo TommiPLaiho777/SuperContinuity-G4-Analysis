@@ -279,6 +279,8 @@ namespace Tommi.ContinuityTool
             selectionTitle.Text = seam.Id + " | " + seam.ReviewState;
             detail.Text = "REVIEW: " + seam.ReviewRole + " -> " + seam.ReviewState + Environment.NewLine +
                 "Sampled grade: " + seam.SampledGradeName + " (worst measured location)" + Environment.NewLine +
+                seam.G4DisplayState + " | raw measured G4: " + seam.GraphOrderPassedSamples(2) + "/" + seam.Samples.Count +
+                " PASS; coverage: " + seam.G4CoverageState + " (KnotAudit=" + seam.KnotAuditState + ")" + Environment.NewLine +
                 "G0 " + seam.G0State + " | G1 " + seam.G1State + " | Section G2 " + seam.SectionG2 + Environment.NewLine +
                 "Independent checks: G1 angle " + seam.RawG1AnglePassedSamples(result.AngleTolerance) + "/" + seam.Samples.Count +
                 ", Section K2 " + seam.RawK2PassedSamples + "/" + seam.Samples.Count +
@@ -301,15 +303,15 @@ namespace Tommi.ContinuityTool
         private void ConfigureColumns()
         {
             // Bind a compact column set to the unchanged backing row; no 28-column scrolling table.
-            int[][] sets = { new[] { 0, 30, 28, 29, 2, 3, 5 }, new[] { 0, 2, 7, 8, 3, 9, 10 },
+            int[][] sets = { new[] { 0, 30, 31, 28, 29, 2, 3, 5 }, new[] { 0, 2, 7, 8, 3, 9, 10 },
                 new[] { 0, 5, 23, 24, 25, 22 }, new[] { 0, 11, 12, 13, 22, 26, 27 } };
             string[] names = { "Seam", "Overview", "G0", "G1", "K", "Section G2", "Ends", "Gap max", "Gap mean", "Angle max (deg)", "Angle mean (deg)",
-                "G0 valid", "G1 valid", "K valid", "dK2 max", "dK2 mean", "dK3 max", "dK3 mean", "dK4 max", "dK4 mean", "Faces", "GraphJet4", "Graph valid", "Graph G2", "Graph G3 sampled", "Graph G4 sampled", "Knots", "Budget", "Role", "Review", "Grade (sampled)" };
+                "G0 valid", "G1 valid", "K valid", "dK2 max", "dK2 mean", "dK3 max", "dK3 mean", "dK4 max", "dK4 mean", "Faces", "GraphJet4", "Graph valid", "Graph G2", "Graph G3 sampled", "Graph G4 sampled", "Knots", "Budget", "Role", "Review", "Grade / G4 status", "G4 coverage" };
             refreshing = true;
             grid.Columns.Clear();
             foreach (int index in sets[Math.Max(0,columnView.SelectedIndex)])
                 grid.Columns.Add(new GridColumn { HeaderText = names[index], DataCell = new TextBoxCell(index), Editable = false,
-                    Width = index == 0 ? 55 : index == 28 ? 150 : index == 29 ? 125 : index == 30 ? 130 : 100 });
+                    Width = index == 0 ? 55 : index == 28 ? 150 : index == 29 ? 125 : index == 30 ? 220 : index == 31 ? 190 : 100 });
             refreshing = false;
         }
         private static int Rank(SeamReportV9 seam)
@@ -324,6 +326,8 @@ namespace Tommi.ContinuityTool
         {
             string text = seam.Status == "RED" ? "FAIL" : seam.Status == "ORANGE" ? "WARNING" : seam.Status == "GREEN" ? "PASS" : "INCOMPLETE";
             if (seam.Status != "INCOMPLETE" && seam.CompleteCount != seam.Samples.Count) text += " *jets";
+            if (seam.G4DisplayState.StartsWith("G4 UNKNOWN", StringComparison.Ordinal)) text += " | " + seam.G4DisplayState;
+            else if (seam.G4DisplayState == "G4 FAIL") text += " | G4 FAIL";
             return text + (seam.FirstIssue == "PASS" ? "" : " " + seam.FirstIssue);
         }
         private static double SortValue(SeamReportV9 seam, int column)
@@ -338,7 +342,7 @@ namespace Tommi.ContinuityTool
             if (filter.SelectedIndex != 0 && filter.SelectedIndex != 11) seams = seams.Where(x => !x.ReviewExcluded);
             switch (filter.SelectedIndex)
             {
-                case 1: seams = seams.Where(x => x.Status != "GREEN"); break;
+                case 1: seams = seams.Where(x => x.Status != "GREEN" || x.G4DisplayState.StartsWith("G4 UNKNOWN",StringComparison.Ordinal)); break;
                 case 2: seams = seams.Where(x => x.Status == "RED"); break;
                 case 3: seams = seams.Where(x => x.Status == "ORANGE"); break;
                 case 4: seams = seams.Where(x => x.CompleteCount != x.Samples.Count); break;
@@ -367,7 +371,7 @@ namespace Tommi.ContinuityTool
                 SeamReportV9.Number(x.Maximum(1)), SeamReportV9.Number(x.Mean(1)),
                 SeamReportV9.Number(x.Maximum(2)), SeamReportV9.Number(x.Mean(2)), x.FaceA+" / "+x.FaceB, x.GraphState, x.GraphValidCount+"/"+x.Samples.Count,
                 x.GraphOrder(0), x.GraphOrder(1), x.GraphOrder(2), x.KnotCrossings,
-                x.SamplingCapReached ? "BUDGET" : "OK", x.ReviewRole, x.ReviewState, x.SampledGradeName, x }).ToList();
+                x.SamplingCapReached ? "BUDGET" : "OK", x.ReviewRole, x.ReviewState, x.DisplayGradeName, x.G4CoverageState, x }).ToList();
             refreshing = true;
             grid.DataStore = rows;
             int index = rows.FindIndex(x => ((SeamReportV9)x[x.Length-1]).Id == keep);
@@ -375,9 +379,9 @@ namespace Tommi.ContinuityTool
             refreshing = false;
             status.Text = rows.Count + " / " + result.Seams.Count + " shown | Sampled results only | Roles saved in .3dm after document Save";
             var included = result.Seams.Where(x => !x.ReviewExcluded).ToArray();
-            gradeCounts.Text = "Sampled grades (included): " +
+            gradeCounts.Text = "Displayed grades (included): " +
                 string.Join(" | ", new[] {4,3,2,1,0,-1,-2}.Select(g =>
-                    (g==-1 ? "<G0" : g==-2 ? "N/A" : "G"+g) + ":" + included.Count(x=>x.SampledGrade==g))) +
+                    (g==-1 ? "<G0" : g==-2 ? "UNKNOWN" : "G"+g) + ":" + included.Count(x=>x.DisplayGrade==g))) +
                 " | Excluded " + (result.Seams.Count-included.Length);
             settingsInfo.Text = "Current classification settings" + Environment.NewLine +
                 "G0 gap: " + SeamReportV9.Number(result.GapTolerance) + " " + result.UnitName + Environment.NewLine +

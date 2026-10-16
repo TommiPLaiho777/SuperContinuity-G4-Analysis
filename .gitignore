@@ -1,5 +1,9 @@
 src/bin/
 src/obj/
+validation/bin/
+validation/obj/
+validation/rhino8-runs/
+validation/rhino8-versions/
 .vs/
 *.pdb
 *.user

@@ -98,12 +98,14 @@ namespace Tommi.ContinuityTool
                             e.Display.DrawCurve(seam.EdgeCurve, Color.Black, 7);
                             e.Display.DrawCurve(seam.EdgeCurve, Color.Cyan, 5);
                         }
-                        e.Display.DrawCurve(seam.EdgeCurve, GradeColor(seam.SampledGrade), isSelected ? 3 : 2);
+                        e.Display.DrawCurve(seam.EdgeCurve, GradeColor(seam.DisplayGrade), isSelected ? 3 : 2);
                         // Actual geometry is kept beneath; local sample intervals are
                         // overlaid so a small defect doesn't recolor the entire edge.
                         foreach (var stroke in seam.GradeStrokes)
                             if (stroke.Points.Count >= 2)
-                                e.Display.DrawPolyline(stroke.Points, GradeColor(stroke.Grade), isSelected ? 3 : 2);
+                                e.Display.DrawPolyline(stroke.Points,
+                                    seam.G4CoverageIncomplete && stroke.Grade == 4 ? Color.LightGray : GradeColor(stroke.Grade),
+                                    isSelected ? 3 : 2);
                     }
                     else
                     {
@@ -124,9 +126,15 @@ namespace Tommi.ContinuityTool
                     {
                         string targetState = ContinuityGrade.AtTarget(sample,target);
                         hairColor = targetState == "FAIL" ? Color.Red :
-                            targetState == "INCOMPLETE" ? Color.LightGray : GradeColor(ContinuityGrade.Of(sample));
+                            targetState == "INCOMPLETE" || (target >= 4 && seam.G4CoverageIncomplete && targetState == "PASS")
+                                ? Color.LightGray : GradeColor(ContinuityGrade.Of(sample));
                     }
-                    else hairColor = SampleColor(SelectedSampleState(sample, DisplayMetric));
+                    else
+                    {
+                        string state = SelectedSampleState(sample, DisplayMetric);
+                        if (DisplayMetric == "GraphG4" && seam.G4CoverageIncomplete && state == "PASS") state = "INCOMPLETE";
+                        hairColor = SampleColor(state);
+                    }
                     e.Display.DrawLine(new Line(sample.Spike.From,
                         sample.Spike.From + HairScale*(sample.Spike.To - sample.Spike.From)), hairColor, 2);
                 }

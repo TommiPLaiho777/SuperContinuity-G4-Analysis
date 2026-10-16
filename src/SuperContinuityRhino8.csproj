@@ -10,7 +10,7 @@
     <Nullable>disable</Nullable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Title>SuperContinuity G4 Analysis Alpha</Title>
     <Authors>Tommi P. Laiho</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

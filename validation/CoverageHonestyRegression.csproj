@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <LangVersion>7.3</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CoverageHonestyRegression.cs" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="SuperContinuityAlpha"><HintPath>..\build\SuperContinuityAlpha.rhp</HintPath><Private>true</Private></Reference>
+    <Reference Include="RhinoCommon"><HintPath>C:\Program Files\Rhino 8\System\RhinoCommon.dll</HintPath><Private>true</Private></Reference>
+  </ItemGroup>
+  <Target Name="CopyRhpAsTestAssembly" AfterTargets="Build">
+    <Copy SourceFiles="..\build\SuperContinuityAlpha.rhp" DestinationFiles="$(OutDir)SuperContinuityAlpha.dll" />
+  </Target>
+</Project>

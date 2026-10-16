@@ -1,6 +1,8 @@
 # Rhino 8 G4 reference results
 
-Local validation snapshot: 2026-10-16, test run `r004`, test harness `SC autotest v0.1.11`, Rhino 8. Build completed with 0 warnings and 0 errors. The full harness reported **180 passed, 0 failed**, with 19 fixture CSV reports. No document geometry was changed. Test output was isolated under the user's local Temp directory.
+Baseline validation snapshot for Alpha 0.1.0: 2026-10-16, test run `r004`, test harness `SC autotest v0.1.11`, Rhino 8. The G4 analysis build completed with 0 warnings and 0 errors. The full baseline harness reported **180 passed, 0 failed**, with 19 fixture CSV reports. No document geometry was changed. Test output was isolated under the user's local Temp directory.
+
+This historical 180/180 result is not a validation of the Alpha 0.1.1 coverage-honesty changes. The 0.1.1 candidate's new 16-assertion report-classification regression passes outside Rhino. A new Rhino 8 harness attempt on 2026-10-16 ended before `result.json`; Rhino displayed a licensing warning, so no 0.1.1 Rhino test pass is claimed.
 
 The exact affine references use `z = 0.1*x^m*(1 + 0.5*y)`. At `y = 0, 0.25, 0.5, 0.8, 1`, the measured fourth-order geometric mismatch for `m=4` was respectively `2.4, 2.7, 3.0, 3.36, 3.6` (model-length units to the power `-3`). Rhino returned `0` at all five stations for `m=5`. The outcomes were:
 

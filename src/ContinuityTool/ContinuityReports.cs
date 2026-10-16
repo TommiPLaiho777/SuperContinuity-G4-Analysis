@@ -78,6 +78,38 @@ namespace Tommi.ContinuityTool
         public void InvalidateGradeStrokes() { gradeStrokes = null; }
         public int SampledGrade { get { return ContinuityGrade.Of(this); } }
         public string SampledGradeName { get { return ContinuityGrade.Name(SampledGrade); } }
+        // Keep observed sample classification separate from whether the planned
+        // knot/adaptive coverage completed. A measured failure always wins over
+        // incomplete coverage; only an all-pass G4 result can become UNKNOWN.
+        public string G4CoverageState
+        {
+            get
+            {
+                string audit = KnotAuditState;
+                if (audit == "PARTIAL_FLANK_SAMPLING" || audit == "UNPROBEABLE_FLANKS" ||
+                    audit == "MAPPING_INCOMPLETE" || audit == "KNOT_OVERLAP_UNRESOLVED" ||
+                    audit == "BOTH_FLANKS_JETS_INCOMPLETE") return "INCOMPLETE";
+                if (SamplingCapReached && audit != "DISABLED") return "INCOMPLETE";
+                if (SamplingCapReached && audit == "DISABLED") return "SAMPLING_CAP_REACHED_AUDIT_DISABLED";
+                return audit == "DISABLED" ? "AUDIT_DISABLED" : "PLANNED_COVERAGE_COMPLETE";
+            }
+        }
+        public bool G4CoverageIncomplete
+        { get { return G4CoverageState == "INCOMPLETE"; } }
+        public string G4DisplayState
+        {
+            get
+            {
+                string measured = GraphOrder(2);
+                if (measured == "FAIL") return "G4 FAIL";
+                if (measured != "PASS") return "G4 UNKNOWN";
+                return G4CoverageIncomplete ? "G4 UNKNOWN — INCOMPLETE COVERAGE" : "G4 SAMPLED PASS";
+            }
+        }
+        public int DisplayGrade
+        { get { return SampledGrade == 4 && G4CoverageIncomplete ? ContinuityGrade.Unknown : SampledGrade; } }
+        public string DisplayGradeName
+        { get { return DisplayGrade == ContinuityGrade.Unknown && GraphOrder(2) == "PASS" ? G4DisplayState : ContinuityGrade.Name(DisplayGrade); } }
         public Point3d Anchor;
         public Curve EdgeCurve;
         public List<SampleReportV9> Samples = new List<SampleReportV9>();
@@ -144,7 +176,7 @@ namespace Tommi.ContinuityTool
         }
         public int MissingEndpointCount { get { return Samples.Count(x => !x.Valid && (x.Fraction == 0 || x.Fraction == 1)); } }
         public string DisplayState(string metric)
-        { return metric == "G0" ? G0State : metric == "G1" ? G1State : metric == "K" ? KState : metric == "SectionG2" ? SectionG2 : metric == "Graph4" ? GraphState : metric == "GraphG2" ? GraphOrder(0) : metric == "GraphG3" ? GraphOrder(1) : metric == "GraphG4" ? GraphOrder(2) : Status; }
+        { return metric == "G0" ? G0State : metric == "G1" ? G1State : metric == "K" ? KState : metric == "SectionG2" ? SectionG2 : metric == "Graph4" ? GraphState : metric == "GraphG2" ? GraphOrder(0) : metric == "GraphG3" ? GraphOrder(1) : metric == "GraphG4" ? (GraphOrder(2) == "PASS" && G4CoverageIncomplete ? "INCOMPLETE" : GraphOrder(2)) : Status; }
         public int ValidCount { get { return Samples.Count(x => x.Valid); } }
         public double Maximum(int order)
         {
@@ -183,6 +215,8 @@ namespace Tommi.ContinuityTool
                 "dK4 " + Number(Maximum(2)) + " (" + Number(Mean(2)) + ")",
                 "Section G2 (cross-seam) "+SectionG2+"; strict Graph G2/G3/G4 " + GraphOrder(0)+"/"+GraphOrder(1)+"/"+GraphOrder(2) +
                 " ("+GraphValidCount+"/"+Samples.Count+" graph samples)",
+                G4DisplayState + " | measured G4 PASS " + GraphOrderPassedSamples(2) + "/" + Samples.Count +
+                " | coverage " + G4CoverageState + " | KnotAudit " + KnotAuditState,
                 "Knot crossings " + KnotCrossings + "; added adaptive samples " + AdaptiveSamples +
                 (SamplingCapReached ? " (budget-limited; coverage only)" : "") };
         }

@@ -69,7 +69,7 @@ namespace Tommi.ContinuityTool
                     "G0_state", "G1_state", "K_state", "K_missing_endpoints", "AbsK2_1perUnit", "AbsK3_1perUnit2", "AbsK4_1perUnit3", "Method", "IncompleteSamples", "GraphJet4_state", "GraphJet4_valid", "GraphJet4_G2_failed", "GraphJet4_G3_failed", "GraphJet4_G4_failed",
                     "GraphG2_sampled_state", "GraphG3_sampled_state", "GraphG4_sampled_state",
                     "GraphG2_passed_samples", "GraphG3_passed_samples", "GraphG4_passed_samples",
-                    "KnotCrossings", "KnotOverlap", "KnotMappingIncomplete", "SamplingCapReached", "AdaptiveSamples", "CoverageClassification", "SectionG2_sampled_state", "SectionG2_passed_samples", "ReviewRole", "ReviewState", "ReviewExcluded", "DisplayGrade_sampled", "DisplayGrade_semantics", "RawG1AnglePassSamples_ignoreG0", "RawK2PassSamples_ignoreG0G1", "G0_method", "G0_old_paired_max_modelUnits", "G0_A_to_B_max_modelUnits", "G0_B_to_A_max_modelUnits", "K2_absOnly_samples", "K2_relativeOnly_samples", "K2_both_samples", "K2_failed_samples", "K2_tolerance_policy", "KnotAuditStatus", "KnotAuditCrossings", "KnotAuditBothFlanks", "KnotAuditPartialOrMissing", "IntervalBoundStatus", "KnotEffectiveBudget", "KnotEstimatedMinimum", "AutoKnotBudgetSetting");
+                    "KnotCrossings", "KnotOverlap", "KnotMappingIncomplete", "SamplingCapReached", "AdaptiveSamples", "CoverageClassification", "SectionG2_sampled_state", "SectionG2_passed_samples", "ReviewRole", "ReviewState", "ReviewExcluded", "DisplayGrade_sampled", "DisplayGrade_semantics", "G4_user_facing_state", "G4_coverage_state", "G4_raw_sampled_state", "G4_raw_passed_samples", "RawG1AnglePassSamples_ignoreG0", "RawK2PassSamples_ignoreG0G1", "G0_method", "G0_old_paired_max_modelUnits", "G0_A_to_B_max_modelUnits", "G0_B_to_A_max_modelUnits", "K2_absOnly_samples", "K2_relativeOnly_samples", "K2_both_samples", "K2_failed_samples", "K2_tolerance_policy", "KnotAuditStatus", "KnotAuditCrossings", "KnotAuditBothFlanks", "KnotAuditPartialOrMissing", "IntervalBoundStatus", "KnotEffectiveBudget", "KnotEstimatedMinimum", "AutoKnotBudgetSetting");
                     else
                     {
                     var sampleHeaders = new List<object> { "Seam", "ObjectId", "EdgeIndex", "FaceA", "FaceB", "Mode", "ModelUnits", "Sample", "EdgeFraction", "X", "Y", "Z", "Step_modelUnits", "Status", "Reason",
@@ -79,7 +79,7 @@ namespace Tommi.ContinuityTool
                     "G0_gap_tolerance_modelUnits", "G1_angle_tolerance_deg", "MappingResidual_modelUnits", "OrientedNormalAngle_deg", "NormalsOpposed",
                     "BoundaryA_X", "BoundaryA_Y", "BoundaryA_Z", "BoundaryB_X", "BoundaryB_Y", "BoundaryB_Z", "BoundaryReason",
                     "G0_state", "G1_state", "K_state", "AbsK2_1perUnit", "AbsK3_1perUnit2", "AbsK4_1perUnit3", "Method", "GraphJet4_state", "GraphJet4_reason", "GraphJet4_available", "GraphJet4_G2_pass", "GraphJet4_G3_pass", "GraphJet4_G4_pass",
-                    "GraphG2_cumulative_state", "GraphG3_cumulative_state", "GraphG4_cumulative_state", "SampleSource", "EdgeParameter", "SectionG2_sampled_state", "ReviewRole", "ReviewState", "ReviewExcluded", "DisplayGrade_atSample", "RawG1AnglePass_ignoreG0", "RawK2Pass_ignoreG0G1", "G0_method", "G0_old_paired_UV_gap_modelUnits", "G0_A_to_B_nearest_modelUnits", "G0_B_to_A_nearest_modelUnits", "K2_absolute_difference_1perUnit", "K2_relative_difference_pct", "K2_relative_allowance_1perUnit", "K2_absolute_allowance_1perUnit", "K2_effective_allowance_1perUnit", "K2_acceptance_basis" };
+                    "GraphG2_cumulative_state", "GraphG3_cumulative_state", "GraphG4_cumulative_state", "SampleSource", "EdgeParameter", "SectionG2_sampled_state", "ReviewRole", "ReviewState", "ReviewExcluded", "DisplayGrade_atSample", "Seam_G4_user_facing_state", "Seam_G4_coverage_state", "Seam_G4_raw_sampled_state", "Seam_G4_raw_passed_samples", "RawG1AnglePass_ignoreG0", "RawK2Pass_ignoreG0G1", "G0_method", "G0_old_paired_UV_gap_modelUnits", "G0_A_to_B_nearest_modelUnits", "G0_B_to_A_nearest_modelUnits", "K2_absolute_difference_1perUnit", "K2_relative_difference_pct", "K2_relative_allowance_1perUnit", "K2_absolute_allowance_1perUnit", "K2_effective_allowance_1perUnit", "K2_acceptance_basis" };
                     foreach (var name in GraphJetNames)
                     {
                         sampleHeaders.Add("GraphJet4_"+name+"_A");
@@ -110,6 +110,7 @@ namespace Tommi.ContinuityTool
                         seam.KnotCrossings, seam.KnotOverlap, seam.KnotMappingIncomplete, seam.SamplingCapReached,
                         seam.AdaptiveSamples, "SAMPLED_ONLY", seam.SectionG2, seam.SectionG2PassedSamples, seam.ReviewRole, seam.ReviewState, seam.ReviewExcluded,
                         seam.SampledGradeName, "HYBRID: G2=section K2, G3/G4=strict cumulative GraphJet4; sampled only",
+                        seam.G4DisplayState, seam.G4CoverageState, seam.GraphOrder(2), seam.GraphOrderPassedSamples(2),
                         seam.RawG1AnglePassedSamples(current.AngleTolerance), seam.RawK2PassedSamples,
                         "DIRECTED_TRIM_TO_TRIM_LOCAL", seam.PairedGapMaximum, seam.G0AtoBMaximum, seam.G0BtoAMaximum,
                         seam.Samples.Count(x=>x.Valid && ContinuityEvaluator.AcceptanceBasis(x.A[0],x.B[0],current.Tolerances[0],current.AbsoluteTolerances[0])=="ABSOLUTE"),
@@ -153,7 +154,8 @@ namespace Tommi.ContinuityTool
                                 sample.GraphPass!=null ? (object)sample.GraphPass[2] : null,
                                 sample.GraphOrderState[0], sample.GraphOrderState[1], sample.GraphOrderState[2],
                                 sample.SampleSource, sample.EdgeParameter, sample.SectionG2State, seam.ReviewRole, seam.ReviewState, seam.ReviewExcluded,
-                                ContinuityGrade.Name(ContinuityGrade.Of(sample)),
+                                ContinuityGrade.Name(ContinuityGrade.Of(sample)), seam.G4DisplayState, seam.G4CoverageState,
+                                seam.GraphOrder(2), seam.GraphOrderPassedSamples(2),
                                 sample.G1Valid ? (object)(sample.AngleDegrees <= current.AngleTolerance) : null,
                                 sample.Valid ? (object)sample.Pass[0] : null,
                                 sample.G0Measurement, sample.PairedSurfaceGap, sample.G0AtoB, sample.G0BtoA,
