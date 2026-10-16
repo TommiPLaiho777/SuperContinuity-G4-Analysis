@@ -154,7 +154,9 @@ Appendix B differentiates the curvature formula step by step. In particular, w c
 ---
 # 9. Measurements and coverage are different axes
 
-The S122 regression illustrates the central evidence problem. All 219 measured G4 samples pass, but the knot audit reports 398 of 477 rows without the required two-sided flank evidence. The numerical observation and the completeness of the requested evidence are both true and must both remain visible.
+**Where S122 comes from.** S122 is the seam label assigned to a door seam of the author's Luce car model in one particular analysis run (Brep Edge 150). It is a model/run-specific identifier, not a mathematical term or a universal seam number. The private car model is not part of the four analytic reference Breps distributed with this release.
+
+That report illustrates the central evidence problem. All 219 measured G4 samples pass, but the knot audit reports 398 of 477 rows without the required two-sided flank evidence. The numerical observation and the completeness of the requested evidence are both true and must both remain visible. The public S122-like regression constructs report objects with these same counts; it does not reproduce or remeasure the car's geometry.
 
 | Measured G4 state | Independent coverage evidence | User-facing result |
 | PASS | Explicitly incomplete audit | G4 UNKNOWN - INCOMPLETE COVERAGE |
@@ -167,6 +169,20 @@ An observed reliable failure is a counterexample. Missing other samples cannot e
 `SamplingCapReached` is retained as a diagnostic. A cap alone is not proof of missing required knot evidence, even when knot auditing is enabled. Explicit states such as partial flanks, unprobeable flanks, incomplete mapping, unresolved overlap, or incomplete flank jets drive the UNKNOWN coverage override.
 
 The table, selected-seam details, CSV, and viewport consume this separation. All-pass G4 with explicit incomplete coverage must not receive the confirmed green grade. Raw sample counts and raw sampled states remain available. A sampled pass is still finite evidence when the planned audit completes.
+
+---
+
+# Case illustration. The Luce door seam S122
+
+![Author-provided Rhino screenshot of the Luce door seam](../assets/Luce_S122_Door_Seam.png)
+
+**Figure.** The author supplied this screenshot of the Luce car's door seam, labeled S122 in that analysis run (Edge 150). It is an unusual, challenging seam-analysis case. The long door outline and dense diagnostic hairs make it a useful example of why a visual impression and a list of passing measurements are insufficient evidence for an entire seam.
+
+The green rendering is from the earlier display behavior. It is not a G4 certificate, and the screenshot alone establishes neither a geometric defect nor a numerical failure. The reported issue is incomplete requested evidence: 219/219 measured G4 samples passed, while 398/477 knot-audit rows lacked the required flank evidence and the sample cap was reached.
+
+The corrected interpretation is **G4 UNKNOWN - INCOMPLETE COVERAGE**, while preserving the raw 219/219 observation. The cap alone does not cause UNKNOWN. A reliable measured G4 failure still takes precedence over incomplete coverage.
+
+The image is included with the author's permission as context. The private Luce model is not distributed here. The four analytic reference Breps and the synthetic S122-shaped regression are separate, reproducible tests; neither is a remeasurement of this photographed model.
 
 ---
 # 10. Knots, flanks, and unsampled intervals
@@ -317,7 +333,7 @@ The historical Rhino 8 reference run r004 passed 180 tests and produced 19 fixtu
 
 A subsequent native run tested the Alpha 0.1.1 production C# files in the isolated harness: 180 passed, zero failed, 19 fixture exports. The test identity and project differ from the distributed release binary. The coverage-honesty executable separately tests constructed report states against the release binary; these assertions are not silently counted as part of the 180.
 
-A later cap-only coverage-policy correction passes 21 standalone assertions, including complete enabled-audit cases. Its final native rerun was deferred before Rhino launch because ACC was active. The earlier native pass must not be presented as a native pass of that later revision. Consult the included validation records for the current release-candidate status.
+The final cap-only coverage-policy correction passed 21 standalone assertions against the release binary. Its native Rhino 8 rerun subsequently passed 180/180 tests and exported 19 fixture CSVs (candidate a78755e, 2026-10-17 local time). A separate release-binary UI check reproduced G4, G3, G2, and G4 on the four supplied Breps, exporting four seam records and 546 measured samples. These remain distinct checks; consult the validation records for their precise scope.
 
 The analytic references have two layers of evidence. Their formulas give exact contact-order statements along x=0 in mathematics. The software's finite measurements show that this implementation reproduces the intended outcomes at the tested stations and settings. The former is a proof about these specific formulas; the latter is a regression test of software behavior.
 
@@ -327,6 +343,8 @@ For the four-Brep model, retain the generator, model, tolerances, and actual exp
 
 ---
 # Appendix E. Debugging S122 without hiding evidence
+
+Here S122 refers to the Luce door-seam case introduced in section 9. The software regression uses a clearly labeled synthetic report with the same evidence pattern. A real-model observation and a constructed software fixture are different sources of evidence.
 
 Start with raw observations. Inspect the measured GraphG4 states and the number of passes. If 219 of 219 measured points pass, preserve that observation. Next inspect `KnotAuditStatus`, not just a budget flag. A partial-flank state with missing required probes is independently incomplete evidence.
 

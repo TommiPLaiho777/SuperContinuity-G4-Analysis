@@ -76,6 +76,13 @@ def main():
                 story.append(Paragraph(inline(block[2:]), title))
             elif block.startswith("## "):
                 story.append(Paragraph(inline(block[3:]), subtitle))
+            elif re.fullmatch(r"!\[([^\]]*)\]\(([^)]+)\)", block):
+                match = re.fullmatch(r"!\[([^\]]*)\]\(([^)]+)\)", block)
+                path = (source.parent / match.group(2)).resolve()
+                with PillowImage.open(path) as img:
+                    w, h = img.size
+                scale = min(width / w, 230 / h)
+                story.extend([Image(str(path), width=w*scale, height=h*scale), Spacer(1, 12)])
             elif block.startswith("$$"):
                 # An authoring block may contain more than one displayed equation.
                 for eq in re.findall(r"\$\$(.*?)\$\$", block, re.S):

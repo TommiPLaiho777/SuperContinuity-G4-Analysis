@@ -22,7 +22,7 @@ The `build/SuperContinuityAlpha.rhp` binary is built from the included source fo
 
 Review `examples/REFERENCE_GEOMETRY.md` for the programmatically defined positive and negative G3/G4 references and `validation/RHINO8_G4_RESULTS.md` for the recorded Rhino 8 measurements. Run `dotnet run --project validation/CoverageHonestyRegression.csproj` for the coverage classification regressions. The reference equations are analytic fixtures; the plugin's general-purpose result remains sample-based.
 
-The first Alpha 0.1.1 production-source snapshot passed the existing native Rhino 8 harness: 180 self-tests and 19 fixture CSV exports. The subsequent cap-only coverage correction passes 21 standalone assertions against the rebuilt release binary; its final native run was deferred because ACC was active. See `validation/RHINO8_ALPHA011_RESULTS.md` for the exact validation scope and pending checks. The four-Brep reference model and its reproducible creation script are in `examples/G4_Reference_Surfaces`; their README explains the absolute K3/K4 tolerances and the remaining plug-in/UI validation step.
+The final Alpha 0.1.1 production-source snapshot passed 180/180 native Rhino 8 self-tests and exported 19 fixture CSVs. The shipped binary separately passed 21 coverage assertions. Its actual analyzer/UI reproduced G4, G3, G2 and G4 on the four supplied reference Breps and exported 546 sample records. See `validation/RHINO8_ALPHA011_RESULTS.md` and `validation/ALPHA011_UI_REFERENCE_RESULTS.md` for precise scope and remaining visual/installation checks. The reproducible model and scripts are in `examples/G4_Reference_Surfaces`.
 
 ## Mathematics and human-readable implementation
 
