@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Library</OutputType>
+    <TargetExt>.rhp</TargetExt>
+    <AssemblyName>SuperContinuityAlpha</AssemblyName>
+    <RootNamespace>Tommi.ContinuityTool</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>0.1.0</Version>
+    <Title>SuperContinuity G4 Analysis Alpha</Title>
+    <Authors>Tommi P. Laiho</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RhinoSystemDir Condition="'$(RhinoSystemDir)' == ''">C:\Program Files\Rhino 8\System</RhinoSystemDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SuperContinuityPlugin.cs" />
+    <Compile Include="ContinuityTool\*.cs" Exclude="ContinuityTool\ContinuityAdvancedFixtures.cs;ContinuityTool\ContinuityAutoFixtures.cs;ContinuityTool\ContinuityKnotAdaptiveValidation.cs;ContinuityTool\ContinuityNurbsFixtures.cs;ContinuityTool\ContinuitySelfTest.cs;ContinuityTool\ContinuityG0Diagnostics.cs;ContinuityTool\Exact*.cs;ContinuityTool\RealBrep*.cs;ContinuityTool\NativeBrep*.cs;ContinuityTool\TrimSeamParameterAudit.cs" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="RhinoCommon"><HintPath>$(RhinoSystemDir)\RhinoCommon.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Rhino.UI"><HintPath>$(RhinoSystemDir)\Rhino.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Eto"><HintPath>$(RhinoSystemDir)\Eto.dll</HintPath><Private>false</Private></Reference>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="CheckRhinoSdk" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(RhinoSystemDir)\RhinoCommon.dll') Or !Exists('$(RhinoSystemDir)\Rhino.UI.dll') Or !Exists('$(RhinoSystemDir)\Eto.dll')" Text="Rhino 8 SDK references are missing from RhinoSystemDir." />
+  </Target>
+</Project>
+
