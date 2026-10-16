@@ -64,7 +64,11 @@ namespace Tommi.ContinuityTool
         {
             if (doc == null) return false;
             if (doc.Strings.GetValue(Section, "Units") != doc.ModelUnitSystem.ToString()) return false;
-            return ContinuitySettingsSnapshot.TryRestore(doc.Strings.GetValue(Section, "Settings"));
+            string raw = doc.Strings.GetValue(Section, "Settings");
+            bool restored = ContinuitySettingsSnapshot.TryRestore(raw);
+            if (restored && raw.StartsWith("v1;", StringComparison.Ordinal))
+                RhinoApp.WriteLine("SuperContinuity: legacy settings loaded. Zero K3Abs/K4Abs defaults are upgraded to explicit 1e-10; nonzero values and G2 are unchanged. Current K3Abs={0:R}, K4Abs={1:R}. You can explicitly select zero for relative-only comparison.", ContinuitySettings.absK3, ContinuitySettings.absK4);
+            return restored;
         }
         internal static bool ValidRole(string role) { return Roles.Contains(role); }
     }
@@ -76,7 +80,7 @@ namespace Tommi.ContinuityTool
         internal static ContinuitySettingsSnapshot Capture() { return new ContinuitySettingsSnapshot(); }
         public override string ToString()
         {
-            return string.Join(";", new [] { "v1", ContinuitySettings.strict ? "1" : "0",
+            return string.Join(";", new [] { "v2", ContinuitySettings.strict ? "1" : "0",
                 ContinuitySettings.customG2.ToString("R",I), ContinuitySettings.customG3.ToString("R",I),
                 ContinuitySettings.customG4.ToString("R",I), ContinuitySettings.gapTolerance.ToString("R",I),
                 ContinuitySettings.angleTolerance.ToString("R",I), ContinuitySettings.absK2.ToString("R",I),
@@ -89,7 +93,7 @@ namespace Tommi.ContinuityTool
         {
             if (string.IsNullOrEmpty(raw)) return false;
             var p = raw.Split(';');
-            if (p.Length != 16 || p[0] != "v1") return false;
+            if (p.Length != 16 || (p[0] != "v1" && p[0] != "v2")) return false;
             try
             {
                 double[] d = new double[8];
@@ -107,6 +111,15 @@ namespace Tommi.ContinuityTool
                     d[2] > 50 || d[4] > 90) return false;
                 if ((p[1] != "0" && p[1] != "1") ||
                     new[] { p[12],p[13],p[14] }.Any(x => x != "0" && x != "1")) return false;
+                // #SC-NUM-04 VERSIONED LEGACY-ZERO MIGRATION.
+                // v1 persisted zeros as defaults, even without an explicit user
+                // choice. Migrate high-order zeros only; keep nonzero thresholds
+                // and G2. v2 preserves deliberate zeros on every subsequent load.
+                if (p[0] == "v1")
+                {
+                    if (d[6] == 0) d[6] = ContinuitySettings.DefaultHighOrderAbsoluteTolerance;
+                    if (d[7] == 0) d[7] = ContinuitySettings.DefaultHighOrderAbsoluteTolerance;
+                }
                 ContinuitySettings.strict = p[1] == "1";
                 ContinuitySettings.customG2 = d[0]; ContinuitySettings.customG3 = d[1]; ContinuitySettings.customG4 = d[2];
                 ContinuitySettings.gapTolerance = d[3]; ContinuitySettings.angleTolerance = d[4];

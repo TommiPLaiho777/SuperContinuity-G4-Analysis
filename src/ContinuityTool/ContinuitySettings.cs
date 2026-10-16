@@ -14,7 +14,16 @@ namespace Tommi.ContinuityTool
         public static int maximumSamples = 220;
         public static bool autoKnotBudget = false;
         public static int knotBudgetCap = 2500;
-        public static double absK2 = 0, absK3 = 0, absK4 = 0;
+        // #SC-NUM-03 EXPLICIT HIGH-ORDER DEFAULT, NOT A HIDDEN EPSILON.
+        // The reference endpoint's analytically equal third derivatives differ
+        // by 4.64e-15 in floating point. Relative-only comparison near zero
+        // rejects this. Use visible, configurable absolute allowances; never
+        // round measurements to zero or silently alter the comparison function.
+        // Values are in inverse model units squared/cubed, not a certified error
+        // bound or a universal scale-invariant tolerance. Preserve G2's policy.
+        public const double DefaultHighOrderAbsoluteTolerance = 1e-10;
+        public static double absK2 = 0, absK3 = DefaultHighOrderAbsoluteTolerance,
+            absK4 = DefaultHighOrderAbsoluteTolerance;
         private static string toleranceUnits;
         public static bool labels = false;
         public static double gapTolerance = double.NaN, angleTolerance = double.NaN;
@@ -32,7 +41,8 @@ namespace Tommi.ContinuityTool
                 strict=false; customG2=5; customG3=10; customG4=15;
                 sampleCount=61; maximumSamples=220; knotAware=true; adaptive=true;
                 autoKnotBudget=false; knotBudgetCap=2500;
-                absK2 = absK3 = absK4 = 0;
+                absK2 = 0;
+                absK3 = absK4 = DefaultHighOrderAbsoluteTolerance;
                 gapTolerance = doc.ModelAbsoluteTolerance;
                 angleTolerance = doc.ModelAngleToleranceRadians * 180.0 / System.Math.PI;
                 // .3dm data is authoritative only when stored unit system matches.
@@ -104,6 +114,8 @@ namespace Tommi.ContinuityTool
             }
             if (autoKnotBudget && (!knotAware || !adaptive))
                 RhinoApp.WriteLine("AutoKnotBudget is active only with KnotAware=On AND Adaptive=On; fixed MaxSamples will be used.");
+            if (absK3 == 0 || absK4 == 0)
+                RhinoApp.WriteLine("WARNING: zero K3Abs/K4Abs uses relative-only high-order comparisons; roundoff near zero can produce false failures. The explicit default is 1e-10 in the respective inverse model units. Your selected zero is retained.");
             ContinuityDocumentStore.SaveSettings(doc);
             runAnalysis = true;
             return Result.Success;

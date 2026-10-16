@@ -9,6 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CoverageHonestyRegression.cs" />
+    <Compile Include="HighOrderToleranceRegression.cs" />
+    <Reference Include="Microsoft.VisualBasic" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
     <Reference Include="SuperContinuityAlpha"><HintPath>..\build\SuperContinuityAlpha.rhp</HintPath><Private>true</Private></Reference>
     <Reference Include="RhinoCommon"><HintPath>C:\Program Files\Rhino 8\System\RhinoCommon.dll</HintPath><Private>true</Private></Reference>

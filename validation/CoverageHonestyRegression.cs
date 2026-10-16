@@ -75,9 +75,10 @@ internal static class CoverageHonestyRegression
         Check(s122.GraphOrder(0) == "PASS" && s122.GraphOrder(1) == "PASS", "G2/G3 measured classifications must remain unchanged.");
     }
 
-    private static int Main()
+    private static int Main(string[] args)
     {
         Run();
+        HighOrderToleranceRegression.Run(Check, args);
         Console.WriteLine("Coverage honesty regressions: " + assertions + " assertions PASS.");
         return 0;
     }
