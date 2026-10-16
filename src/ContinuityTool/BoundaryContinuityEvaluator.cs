@@ -10,6 +10,14 @@ namespace Tommi.ContinuityTool
     /// </summary>
     public static class BoundaryContinuityEvaluator
     {
+        // #SC-MATH-13 TOPOLOGY DOES NOT PROVE GEOMETRIC CONTINUITY.
+        // A joined Brep edge supplies topology and a parameter correspondence, but
+        // comparing that shared edge to itself would ALWAYS report a zero gap.
+        // Evaluate the separate face trims instead. The current G0 value is the
+        // maximum of two LOCAL directed trim-distance searches, not a certified
+        // Hausdorff distance for the whole seam. Preserve same-UV paired distance
+        // and mapping residual as separate diagnostics; they answer different
+        // questions. Prepare caches only topology and must not outlive geometry edits.
         public static void Measure(BrepEdge edge, BrepFace faceA, BrepFace faceB,
             double edgeParameter, SampleReportV9 report)
         {
@@ -119,6 +127,11 @@ namespace Tommi.ContinuityTool
         /// </summary>
         public static double AngleDegrees(Vector3d a, Vector3d b, bool unoriented)
         {
+            // #SC-NUM-02 PLANE AGREEMENT VERSUS NORMAL ORIENTATION.
+            // atan2(|a cross b|,|a dot b|) avoids acos cancellation near zero and
+            // identifies opposite normals with the same tangent plane. An oriented
+            // angle is recorded separately: no inference about solid orientation,
+            // self-overlap, or correct joining should be drawn from G1 alone.
             if (!a.IsValid || !b.IsValid || !a.Unitize() || !b.Unitize()) return double.NaN;
             double dot = a * b;
             if (unoriented) dot = Math.Abs(dot);

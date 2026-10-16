@@ -11,6 +11,14 @@ namespace Tommi.ContinuityTool
     /// </summary>
     public static class SectionJetEvaluator
     {
+        // #SC-MATH-08 SECTION DIAGNOSTIC, NOT THE FULL SURFACE TEST.
+        // In the plane spanned by physical x,z, solve the surface's remaining
+        // coordinate m=cross(x,z) to zero. The section becomes (x,h(x)). Its signed
+        // curvature and its first two arclength derivatives use surface partials
+        // through order four, but probe only ONE section direction. A surface has
+        // mixed derivatives that no single section can recover; GraphJet compares
+        // those independently. Historical K2,K3,K4 labels here mean k,dk/ds,d2k/ds2.
+        // They must not be relabeled as general surface G2,G3,G4 certificates.
         private static readonly double[] Factorial = { 1, 1, 2, 6, 24 };
 
         public static bool Evaluate(Surface surface, Point3d uv, Vector3d x, Vector3d z,
@@ -85,6 +93,13 @@ namespace Tommi.ContinuityTool
             }
             double p = height[1], q = height[2], r = height[3], t = height[4];
             double w = 1 + p*p;
+            // #SC-MATH-09 ARCLENGTH CHAIN RULE (PDF Appendix B).
+            // ds/dx=sqrt(1+p^2), so D_s=w^(-1/2) D_x; k=q*w^(-3/2).
+            // Apply D_s twice, DIFFERENTIATING w as well: w'=2*p*q.
+            // Omitting that dependence loses the p*q*r and q^3 terms below.
+            // The resulting units are L^-1, L^-2, L^-3 respectively. Signed values
+            // require the same x,z orientation on both faces; each face must not
+            // silently choose its own normal when the two results are compared.
             values = new[] {
                 q/Math.Pow(w,1.5),
                 r/(w*w) - 3*p*q*q/(w*w*w),

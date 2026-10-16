@@ -13,6 +13,13 @@ namespace Tommi.ContinuityTool
 {
     public static class ContinuityCsv
     {
+        // #SC-UI-02 EXPORT BOTH THE OBSERVATION AND ITS EVIDENCE LIMIT.
+        // Summary and sample tables carry coverage-aware seam status AND the raw
+        // sampled G4 state/count. A sample row's own grade is intentionally local;
+        // it does not certify its seam. Missing/non-finite numbers export blank,
+        // never zero. Semicolon separation is deliberate because CurrentCulture
+        // may use decimal commas. Preserve column order with its header whenever
+        // adding diagnostics; spreadsheet users must not silently read shifted data.
         private static readonly string[] GraphJetNames = {
             "hx", "hy", "hxx", "hxy", "hyy", "hxxx", "hxxy", "hxyy", "hyyy",
             "hxxxx", "hxxxy", "hxxyy", "hxyyy", "hyyyy"

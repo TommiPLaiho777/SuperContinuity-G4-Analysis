@@ -12,6 +12,13 @@ namespace Tommi.ContinuityTool
     /// </summary>
     public static class ContinuityGrade
     {
+        // #SC-UI-01 THE DISPLAY LADDER IS NOT A NEW MATHEMATICAL METRIC.
+        // This class summarizes existing point observations. Its G2 step is the
+        // directional section check; its G3/G4 steps require cumulative graph jets.
+        // SeamReportV9.DisplayGrade adds the independent coverage override. UI code
+        // must use that property for the overall seam, while raw per-sample grades
+        // remain available for diagnostics. Changing this ladder must not rewrite
+        // G0-G2 observations merely to hide an incomplete high-order result.
         // -2: insufficient G0 measurement; -1: below G0; 0..4: sampled grade.
         public const int Unknown = -2;
         public const int BelowG0 = -1;

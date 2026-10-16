@@ -64,6 +64,14 @@ internal static class CoverageHonestyRegression
         Check(capAlone.G4CoverageState == "SAMPLING_CAP_REACHED_AUDIT_DISABLED", "Cap-only condition must be distinguished from audited incomplete coverage.");
         Check(capAlone.G4DisplayState == "G4 SAMPLED PASS", "SamplingCapReached alone must not change the measured grade to UNKNOWN.");
 
+        var capWithCompleteAudit = MakeSeam(219, 0, false, true, true);
+        Check(capWithCompleteAudit.KnotAuditState == "BOTH_FLANKS_WITH_GRAPH_JETS", "The cap must not erase completed flank evidence.");
+        Check(capWithCompleteAudit.G4DisplayState == "G4 SAMPLED PASS", "A cap alone must not cause UNKNOWN with a complete enabled knot audit.");
+        Check(!capWithCompleteAudit.G4CoverageIncomplete, "An enabled audit is not itself evidence of missing coverage.");
+        capWithCompleteAudit.KnotAuditRows.Clear();
+        Check(capWithCompleteAudit.KnotAuditState == "NO_MAPPED_INTERIOR_KNOTS", "No-knot audit case must remain distinguishable.");
+        Check(capWithCompleteAudit.G4DisplayState == "G4 SAMPLED PASS", "A cap alone must not cause UNKNOWN when there are no mapped interior knots.");
+
         Check(s122.GraphOrder(0) == "PASS" && s122.GraphOrder(1) == "PASS", "G2/G3 measured classifications must remain unchanged.");
     }
 

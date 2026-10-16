@@ -85,12 +85,19 @@ namespace Tommi.ContinuityTool
         {
             get
             {
+                // #SC-EVIDENCE-01 COVERAGE IS AN INDEPENDENT AXIS.
+                // KnotAuditState describes actual mapped flank probes and usable
+                // jets, not just candidate points. These explicit deficiencies
+                // invalidate an all-pass overall G4 presentation. SamplingCapReached
+                // alone says a finite budget was hit: it does NOT establish which
+                // required observations are missing. Keep it as a diagnostic when
+                // the audit supplies no independent evidence of missing coverage.
                 string audit = KnotAuditState;
                 if (audit == "PARTIAL_FLANK_SAMPLING" || audit == "UNPROBEABLE_FLANKS" ||
                     audit == "MAPPING_INCOMPLETE" || audit == "KNOT_OVERLAP_UNRESOLVED" ||
                     audit == "BOTH_FLANKS_JETS_INCOMPLETE") return "INCOMPLETE";
-                if (SamplingCapReached && audit != "DISABLED") return "INCOMPLETE";
                 if (SamplingCapReached && audit == "DISABLED") return "SAMPLING_CAP_REACHED_AUDIT_DISABLED";
+                if (SamplingCapReached) return "KNOT_AUDIT_COMPLETE_SAMPLING_CAP_REACHED";
                 return audit == "DISABLED" ? "AUDIT_DISABLED" : "PLANNED_COVERAGE_COMPLETE";
             }
         }
@@ -100,6 +107,12 @@ namespace Tommi.ContinuityTool
         {
             get
             {
+                // #SC-EVIDENCE-02 A COUNTEREXAMPLE OUTWEIGHS MISSING SAMPLES.
+                // One reliable observed FAIL refutes the requested sampled G4
+                // result even if other intervals were not sampled. Conversely,
+                // 219/219 observed PASS cannot fill in 398 missing knot-audit rows.
+                // Retain GraphOrder and raw pass counts for CSV/diagnostics; only
+                // the user-facing all-pass interpretation is downgraded by coverage.
                 string measured = GraphOrder(2);
                 if (measured == "FAIL") return "G4 FAIL";
                 if (measured != "PASS") return "G4 UNKNOWN";

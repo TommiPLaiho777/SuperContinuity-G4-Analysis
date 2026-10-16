@@ -16,6 +16,14 @@ namespace Tommi.ContinuityTool
     /// </summary>
     public static class KnotCoverageAudit
     {
+        // #SC-EVIDENCE-03 AUDIT OBSERVATIONS, NOT PLANNER INTENT.
+        // A requested left/right parameter pair is not evidence that either point
+        // was actually measured. EvaluateMeasured checks measured parameters AND
+        // usable graph-jet arrays. BOTH means that two requested flank probes were
+        // observed, not that the exact knot or the intervening interval is smooth.
+        // Status precedence retains unresolved topology/mapping before reporting
+        // complete flank evidence. Never infer completeness just from the count
+        // of passing ordinary samples or from a false SamplingCapReached flag.
         public sealed class Crossing
         {
             public double Center;

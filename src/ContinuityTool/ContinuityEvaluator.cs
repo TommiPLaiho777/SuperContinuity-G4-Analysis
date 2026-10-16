@@ -5,6 +5,13 @@ namespace Tommi.ContinuityTool
 {
     public static class ContinuityEvaluator
     {
+        // #SC-MATH-10 SEPARATE MEASUREMENT, TOLERANCE, AND EVIDENCE.
+        // Evaluate obtains native geometry; Classify compares finite values;
+        // SeamReportV9 aggregates observations and applies the coverage policy.
+        // Do not manufacture numerical zeros for unavailable measurements, and do
+        // not let a sampling budget change an actual measured FAIL into UNKNOWN.
+        // G0/G1 are prerequisites. GraphPass is order-specific evidence, whereas
+        // GraphOrderState is cumulative: G4 cannot PASS when G3 is blocked/failed.
         /// <summary>Independent measurements; overall classification retains missing-data information.</summary>
         public static void Classify(SampleReportV9 sample, double gapTolerance, double angleTolerance,
             double[] relativeTolerances, double[] absoluteTolerances)
@@ -35,6 +42,13 @@ namespace Tommi.ContinuityTool
             {
                 sample.GraphPass = new bool[3] { true,true,true };
                 int index=2;
+                // #SC-MATH-11 ALL MIXED PARTIALS MATTER.
+                // Skip hx,hy because tangent-plane agreement is gated by G1.
+                // Compare 3 second-, 4 third-, and 5 fourth-order entries using
+                // that order's allowance. A single failing mixed entry fails the
+                // order. This is a componentwise test in the chosen common frame;
+                // approximate tolerance decisions are not claimed invariant under
+                // every possible in-plane rotation or every ill-conditioned chart.
                 for (int order=0;order<3;order++)
                     for (int j=0;j<order+3;j++,index++)
                         if (!CheckContinuity(sample.GraphA[index],sample.GraphB[index],
@@ -80,6 +94,12 @@ namespace Tommi.ContinuityTool
         /// </summary>
         public static bool CheckContinuity(double a, double b, double relative, double absolute)
         {
+            // #SC-NUM-01 EXPLICIT ABSOLUTE FLOOR, NEVER A HIDDEN EPSILON.
+            // max(absTol,relTol*scale) accepts either explicit criterion; it is NOT
+            // absTol+relTol*scale. Near zero, relative tolerance alone compares to
+            // a near-zero allowance and may reject roundoff-sized discrepancies.
+            // Users must choose an absolute tolerance in the measured order's
+            // physical units. This routine must not silently 'fix' their settings.
             if (!SampleReportV9.Finite(a) || !SampleReportV9.Finite(b) ||
                 !SampleReportV9.Finite(relative) || !SampleReportV9.Finite(absolute) || relative < 0 || absolute < 0)
                 return false;
@@ -121,6 +141,14 @@ namespace Tommi.ContinuityTool
             if (!report.TrimA.IsValid || !report.TrimB.IsValid)
             { report.Reason = "Paired trim coordinates are unavailable."; report.GraphReason=report.Reason; return; }
             Vector3d z = faceA.NormalAt(report.TrimA.X,report.TrimA.Y);
+            // #SC-MATH-12 ONE PHYSICAL FRAME FOR BOTH FACES.
+            // z uses face A's oriented unit normal; x is perpendicular to the seam
+            // tangent within that tangent plane; y=z cross x completes the frame.
+            // Both jets use THESE SAME axes. Choosing an independent tangent frame
+            // on face B would compare different components and hide the mismatch.
+            // Heights are centered at each evaluated boundary point: G0 checks the
+            // positional gap separately. This is a local contact diagnostic, not a
+            // claim that two noncoincident points form one exact geometric jet.
             if (faceA.OrientationIsReversed) z.Reverse();
             Vector3d x = Vector3d.CrossProduct(edge.TangentAt(t), z);
             if (!z.Unitize() || !x.Unitize())

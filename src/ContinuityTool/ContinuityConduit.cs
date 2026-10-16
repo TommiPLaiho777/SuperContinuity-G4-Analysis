@@ -9,6 +9,12 @@ namespace Tommi.ContinuityTool
 {
     public class AllSeamsConduitV9 : DisplayConduit
     {
+        // #SC-UI-03 COLOR EXPRESSES THE STRENGTH OF THE DISPLAYED CLAIM.
+        // Green is sampled G4, blue sampled G3. For explicitly incomplete G4
+        // coverage, both the seam grade and otherwise-G4 strokes/hairs must become
+        // neutral. Retain a measured FAIL and its lower-grade/local defect cues.
+        // This is presentation only: never alter raw report values while drawing.
+        // Selected outlines and labels can use highlight colors independently.
         public uint DocumentSerial;
         public RhinoDoc SourceDocument;
         public bool ShowNumbers;

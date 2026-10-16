@@ -7,3 +7,5 @@ validation/rhino8-versions/
 .vs/
 *.pdb
 *.user
+/tmp/
+/output/

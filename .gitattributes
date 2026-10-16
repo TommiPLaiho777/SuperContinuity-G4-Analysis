@@ -1,0 +1,4 @@
+# Preserve binary bytes and PDF cross-reference offsets on Windows checkouts.
+*.pdf binary
+*.3dm binary
+*.rhp binary
