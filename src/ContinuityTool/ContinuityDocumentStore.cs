@@ -53,17 +53,40 @@ namespace Tommi.ContinuityTool
             var role = doc.Strings.GetValue(Section, "Role." + key);
             if (Roles.Contains(role)) seam.ReviewRole = role;
         }
+        internal static string ModelUnitContext(RhinoDoc doc)
+        {
+            if (doc == null) return null;
+            string unit = doc.ModelUnitSystem.ToString();
+            if (doc.ModelUnitSystem != UnitSystem.CustomUnits) return unit;
+            string name;
+            double meters;
+            if (!doc.GetCustomUnitSystem(true, out name, out meters) || name == null ||
+                !SampleReportV9.Finite(meters) || meters <= 0) return null;
+            // Length-prefix the name so punctuation in a custom name is unambiguous.
+            return unit + ";" + name.Length.ToString(I) + ":" + name + ";" + F(meters);
+        }
         internal static void SaveSettings(RhinoDoc doc)
         {
             if (doc == null) return;
             var s = ContinuitySettingsSnapshot.Capture();
             doc.Strings.SetString(Section, "Units", doc.ModelUnitSystem.ToString());
+            string context = ModelUnitContext(doc);
+            if (context == null) doc.Strings.Delete(Section, "UnitContext");
+            else doc.Strings.SetString(Section, "UnitContext", context);
             doc.Strings.SetString(Section, "Settings", s.ToString());
         }
         internal static bool RestoreSettings(RhinoDoc doc)
         {
             if (doc == null) return false;
             if (doc.Strings.GetValue(Section, "Units") != doc.ModelUnitSystem.ToString()) return false;
+            string context = ModelUnitContext(doc);
+            string savedContext = doc.Strings.GetValue(Section, "UnitContext");
+            // #SC-STATE-03 SAVED DIMENSIONAL LIMITS REQUIRE THE SAME UNIT DEFINITION.
+            // Legacy ordinary units are identified by their enum. Legacy custom
+            // settings lack a scale/name witness and cannot safely be restored.
+            if (context == null || (string.IsNullOrEmpty(savedContext)
+                ? doc.ModelUnitSystem == UnitSystem.CustomUnits
+                : savedContext != context)) return false;
             string raw = doc.Strings.GetValue(Section, "Settings");
             bool restored = ContinuitySettingsSnapshot.TryRestore(raw);
             if (restored && raw.StartsWith("v1;", StringComparison.Ordinal))

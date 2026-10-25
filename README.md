@@ -1,45 +1,96 @@
-# SuperContinuity G4 Analysis Alpha 0.1.1
+# SuperContinuity 0.1.2-alpha.1 - Rhino 8 test release
 
-SuperContinuity is an MIT-licensed Rhino 8 plug-in for inspecting continuity between adjacent surfaces. This alpha adds a fourth-order sampled geometric surface-jet comparison to the seam analysis table.
+This prerelease updates the existing seam inspector. It preserves the G0-G3
+workflow and adds availability/coverage safeguards to the sampled G4 analysis.
+It is an MIT-licensed analysis tool; it does not edit or optimize your surfaces.
 
-## What the G4 result means
+## Download and try
 
-At finite stations along a seam, the analyzer evaluates each surface through fourth order, expresses the local surface jets as height-graph derivatives in a shared physical frame, and compares the resulting mixed derivatives with configured absolute and relative tolerances. A passing result means only that the measured stations passed: it is **sampled geometric G4** evidence.
+Download the release ZIP from this tag's Assets, extract it to a new folder and
+keep earlier working builds separately. Load build/SuperContinuityAlpha.rhp
+through Rhino 8 Plug-in Manager, then run ContinuityAllSeams9. A plug-in already
+loaded in a Rhino session cannot be replaced by copying a different file over it;
+restart Rhino normally before loading another version of the same plug-in.
 
-The result is distinct from parametric C4. Parametric C4 compares derivatives under a specified parameter correspondence, so its values can change when parameter domains or directions change even if the physical surface does not. The alpha's sampled geometric G4 comparison is intended to be independent of regular reparameterizations represented by the shared local physical frame; validation covers the reference cases listed in `examples/REFERENCE_GEOMETRY.md`, not every possible map or surface.
+The supplied reference model is generated test geometry, not a customer design.
+Open examples/G4_Reference_Surfaces/SuperContinuity_G4_Reference_Surfaces.3dm in a
+separate disposable document. Run ContinuityAllSeams9, select the joined test
+objects and inspect the table. The four reference cases should distinguish
+G4 / G3 / G2 / G4 under the documented reference settings. Read the reference
+README before interpreting its analytical equations or changing tolerances.
 
-A pass is not a mathematical certificate over the entire seam. The analyzer does not prove that unsampled intervals, knot spans, or all points on arbitrary trimmed NURBS boundaries satisfy G4. Where the local graph frame is singular, derivatives are unavailable, or samples cannot be evaluated reliably, the result is `UNKNOWN`/incomplete rather than a pass. Tolerances and sampling density affect classifications. This alpha does not certify Class-A quality.
+Commands: ContinuityAllSeams9 performs analysis; ContinuityAllSeams9Table opens
+the inspector; ContinuityAllSeams9CSV exports data; ContinuityAllSeams9Off stops
+the display. Inspector export buttons save seam summaries or station samples.
 
-## Coverage-aware G4 status
+## How to interpret the result
 
-The release separates raw measured-point results from coverage status. For example, a seam may report `GraphG4_sampled_state=PASS` and `219/219` passing measured samples while its user-facing result is `G4 UNKNOWN — INCOMPLETE COVERAGE` when `KnotAuditStatus` reports missing or unprobeable knot flanks, incomplete mapping, unresolved knot overlap, or incomplete flank jets. The table, selected-seam details, and CSV retain both the user-facing status and raw sample counts. The viewport uses a neutral color for an all-pass G4 result with explicitly incomplete coverage.
+The analyzer samples a seam at finite stations. At each usable station it builds
+a shared physical tangent/normal frame and compares the two surfaces' local
+height-graph derivatives through fourth order, including mixed components.
+This is sampled geometric contact evidence, distinct from a requested nominal
+G4 setting and from parametric C4 under a chosen parameter correspondence.
 
-A measured G4 failure remains `G4 FAIL`, even when coverage is incomplete. `SamplingCapReached` is reported separately and does not by itself turn a measured pass into `UNKNOWN`, whether auditing is enabled or disabled. Explicit incomplete knot-audit evidence drives the coverage override. `UNKNOWN` describes missing evidence, not a detected geometric defect. All passing results remain sampled-only and do not certify the complete seam.
+A sampled PASS applies to the measured stations only. It does not prove every
+point between stations, arbitrary trimmed boundaries, all parameterizations or
+Class-A aesthetic quality. Singular frames, unavailable jets and incomplete
+coverage are missing evidence, not automatically detected geometric failures.
+An independently observed reliable failure remains a failure even if some other
+stations are unavailable. Independently valid lower-order results are retained.
 
-## Install and use
+Colors remain: G4 green, G3 blue, G2 purple, G1 gray, G0 orange and below G0 red.
+An all-pass G4 observation with explicitly incomplete audit coverage uses a
+neutral indication. A color alone is not a continuity certificate. The legacy
+lower-order GREEN overview is not a separate G4 verification statement.
 
-The `build/SuperContinuityAlpha.rhp` binary is built from the included source for Rhino 8 / .NET Framework 4.8 and uses Rhino's installed `RhinoCommon`, `Rhino.UI`, and `Eto` assemblies. In Rhino 8, use Plug-in Manager to load the `.rhp`, then run `ContinuityAllSeams9` on a document containing adjacent surfaces. The table labels identify G3/G4 as sampled geometric results. `ContinuityAllSeams9Table`, `ContinuityAllSeams9CSV`, and `ContinuityAllSeams9Off` open the table, export measurements, and stop the display respectively.
+## Changes since 0.1.1
 
-Review `examples/REFERENCE_GEOMETRY.md` for the programmatically defined positive and negative G3/G4 references and `validation/RHINO8_G4_RESULTS.md` for the recorded Rhino 8 measurements. Run `dotnet run --project validation/CoverageHonestyRegression.csproj` for the coverage classification regressions. The reference equations are analytic fixtures; the plugin's general-purpose result remains sample-based.
+- Exact original NURBS interior knots are treated conservatively by the graph
+  evaluator. Usable flank samples do not establish a unique jet at the knot.
+- Directional section evaluation retains independently available orders. For
+  example, a knot with a sufficient C3 guarantee can retain K2/K3 while K4 stays
+  unavailable and is exported blank. Unknown is not converted to zero or PASS.
+- G4 sampled-pass and attention filters distinguish raw observations from
+  incomplete coverage. Measured failures take precedence over missing coverage.
+- Source replacement/deletion clears stale analysis; unrelated edits retain it.
+- Model-unit changes and native custom-unit name/scale changes clear stale
+  sessions. Saved/live settings require matching dimensional context.
+- Existing inspector, viewport palette and CSV behavior are preserved.
 
-**High-order numerical defaults:** K3Abs and K4Abs now default to `1e-10` in inverse model units squared/cubed; K2Abs remains unchanged at zero. Legacy saved high-order zero defaults are migrated with a notice. Deliberately selected zeros remain supported with a warning. The original four-seam CSV roundoff case, real discontinuities, settings migration, 180 native Rhino tests and a fresh four-reference run with actual defaults are covered in `validation/HIGH_ORDER_DEFAULTS.md`. This record supersedes earlier candidate-binary hashes and counts; earlier UI observations remain historical.
+## Validation and limits
 
-The earlier Alpha 0.1.1 production-source snapshot passed 180/180 native Rhino 8 self-tests and exported 19 fixture CSVs. The shipped binary separately passed 21 coverage assertions. Its actual analyzer/UI reproduced G4, G3, G2 and G4 on the four supplied reference Breps and exported 546 sample records. See `validation/RHINO8_ALPHA011_RESULTS.md` and `validation/ALPHA011_UI_REFERENCE_RESULTS.md` for precise scope and remaining visual/installation checks. The reproducible model and scripts are in `examples/G4_Reference_Surfaces`.
+The RHP is the exact existing native-validated development binary:
+B670E062D3B0BD6F24D8853726491B3D4F5D51DC865230CB93D573DE2E328034.
+Its source production change is recorded in local development commit 86be3b5;
+subsequent candidate c96b193 contains additional evidence, not another binary.
+This release branch copies only intended production/distribution files, without
+publishing the local development history, machine logs or unrelated instructions.
 
-## Mathematics and human-readable implementation
+Earlier isolated Rhino mathematical checks cover the section/knot change and
+180 native baseline cases. The exact current RHP separately passed 46 coverage/
+default assertions and bounded native custom-unit/settings checks. Subsequent
+registered command/options use, actual CSV save/cancel, object-event cleanup,
+inspector rendering, viewport palette and .NET Core/MCP transport were exercised
+in owned Rhino 8 documents. Synthetic presentation checks are not new measured
+surface evidence. This packaging step does not claim a new mathematical test run.
 
-Read `docs/SuperContinuity_G4_Mathematics.pdf` for the geometric interpretation, a step-by-step derivation of the common-frame graph jet, an explicit nonlinear parameter-change example, the section-curvature chain rule, and the Bernstein construction of the reference NURBS. It separates parametric C4, sampled geometric G4, and whole-seam certification. Search the source for `#SC-MATH`, `#SC-NUM`, `#SC-EVIDENCE`, `#SC-UI`, and `#SC-REF` to connect a code decision to its rationale. The editable handbook source and reproducible PDF builder are included under `docs/source`.
+Supported evidence includes declared untrimmed NURBS and bounded interior-UV
+trimmed reference cases. Arbitrary trims, slivers, singularities, universal
+conditioning bounds and whole-seam certification remain outside established
+coverage. The ordinary clean first-install/upgrade path was not independently
+verified; registered loading was verified. The inspector may still display its
+legacy title v7.2.3; use BUILD_INFO.json and the RHP hash for build identity.
 
-## Build
+The repository handbook PDF inherited from the previous tag is historical;
+it is not included in this ZIP as an updated 0.1.2 manual. The explanations above
+state the current per-order knot-availability and coverage semantics.
 
-Install the .NET SDK and Rhino 8. Build from `src` with:
+## Source build
 
-```powershell
-dotnet build .\SuperContinuityRhino8.csproj --configuration Release --framework net48 -p:RhinoSystemDir="C:\Program Files\Rhino 8\System"
-```
+The source target is src/SuperContinuityRhino8.csproj, net48, version
+0.1.2-alpha.1, referencing Rhino 8's installed RhinoCommon/Rhino.UI/Eto assemblies.
+Those host assemblies are not redistributed. Build with an installed .NET SDK:
 
-The compiled plug-in target-framework build is configured for the installed Rhino 8 SDK assemblies; those host assemblies are not bundled in this source package.
+dotnet build src/SuperContinuityRhino8.csproj -c Release --framework net48
 
-## License
-
-MIT. See `LICENSE` for the full terms. Copyright (c) 2026 Tommi P. Laiho.
+This alpha does not certify geometry or replace the designer's visual judgment.

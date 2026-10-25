@@ -44,13 +44,42 @@ namespace Tommi.ContinuityTool
             // native one-sided evaluation as a unique two-sided derivative.
             // A derivative from only one side of an internal knot is not an unambiguous 4-jet.
             // Conservative: even a high-continuity internal knot is reported unavailable.
-            if (!surface.IsContinuous(Continuity.Cinfinity_continuous, uv.X, uv.Y))
+            if (AtNativeInteriorKnot(surface,uv) ||
+                !surface.IsContinuous(Continuity.Cinfinity_continuous, uv.X, uv.Y))
             { reason = "Internal knot: unique fourth-order partials not established."; return false; }
             Point3d point;
             Vector3d[] derivatives;
             if (!surface.Evaluate(uv.X, uv.Y, Order, out point, out derivatives))
             { reason = "Native fourth-order derivatives unavailable."; return false; }
             return FromDerivatives(derivatives, x, y, z, out jet, out reason);
+        }
+
+        // #SC-MATH-07 CHECK STORED KNOTS, NOT ONLY THE PROXY CONTINUITY FLAG.
+        // A real degree-four C3 reference at a BrepFace boundary returned true
+        // from IsContinuous(Cinfinity) at its interior V knot in Rhino 8.
+        // Its fourth V partial has distinct one-sided limits 0 and 2.4.
+        // Inspect the original NURBS chart (also behind a BrepFace) explicitly.
+        // Do NOT convert arbitrary surfaces to a new NURBS parametrization and
+        // then reuse the original UV: those coordinates need not correspond.
+        // Exact stored-knot equality is intentional. Nearby flank probes remain
+        // available; no hidden epsilon band or continuity FAIL is introduced.
+        // All interior knots are declined conservatively, including special
+        // geometry with higher smoothness than its knot multiplicity guarantees.
+        private static bool AtNativeInteriorKnot(Surface surface, Point3d uv)
+        {
+            var face=surface as BrepFace;
+            var nurbs=(face==null ? surface : face.UnderlyingSurface()) as NurbsSurface;
+            if(nurbs==null) return false;
+            for(int direction=0;direction<2;direction++)
+            {
+                var knots=direction==0 ? nurbs.KnotsU : nurbs.KnotsV;
+                var domain=nurbs.Domain(direction);
+                double parameter=direction==0 ? uv.X : uv.Y;
+                for(int i=0;i<knots.Count;i++)
+                    if(knots[i]>domain.T0 && knots[i]<domain.T1 && knots[i]==parameter)
+                        return true;
+            }
+            return false;
         }
 
         public static bool FromDerivatives(Vector3d[] derivatives, Vector3d x, Vector3d y, Vector3d z,

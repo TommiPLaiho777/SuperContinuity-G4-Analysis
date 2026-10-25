@@ -25,6 +25,9 @@ namespace Tommi.ContinuityTool
         public int HairTargetGrade = 2;
         public string SelectedId;
         public string ModeName, UnitName;
+        internal bool HasCustomUnitContext;
+        internal string CustomUnitName;
+        internal double CustomMetersPerUnit;
         public double[] Tolerances;
         public double[] AbsoluteTolerances = new double[3];
         public string DisplayMetric = "Grade";

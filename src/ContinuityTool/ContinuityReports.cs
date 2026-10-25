@@ -43,7 +43,12 @@ namespace Tommi.ContinuityTool
         public double[] A, B;
         public bool[] Pass;
         public bool Valid { get { return A != null && B != null && Pass != null && A.Length == 3 && B.Length == 3 && Pass.Length == 3 && A.All(Finite) && B.All(Finite); } }
-        public double Difference(int order) { return Valid ? Math.Abs(A[order] - B[order]) : double.NaN; }
+        // #SC-EVIDENCE-04 VALIDITY IS PER MEASURED ORDER.
+        // Valid retains its historical meaning: all K2/K3/K4 are available.
+        // Independent G2 grading and per-order statistics/export use SectionValid
+        // so an unavailable K4 neither erases K2 nor exports a fabricated zero.
+        public bool SectionValid(int order) { return order>=0 && order<3 && A!=null && B!=null && Pass!=null && A.Length==3 && B.Length==3 && Pass.Length==3 && Finite(A[order]) && Finite(B[order]); }
+        public double Difference(int order) { return SectionValid(order) ? Math.Abs(A[order] - B[order]) : double.NaN; }
     }
 
     public class SeamReportV9
@@ -152,7 +157,7 @@ namespace Tommi.ContinuityTool
         // Raw angle/curvature checks ignore G0/G1 prerequisite gates for diagnosis only.
         // Do not use these counters as standalone geometric continuity certification.
         public int RawG1AnglePassedSamples(double angleTolerance) { return Samples.Count(x => x.G1Valid && x.AngleDegrees <= angleTolerance); }
-        public int RawK2PassedSamples { get { return Samples.Count(x => x.Valid && x.Pass[0]); } }
+        public int RawK2PassedSamples { get { return Samples.Count(x => x.SectionValid(0) && x.Pass[0]); } }
         public int GraphOrderPassedSamples(int order)
         { return Samples.Count(x => x.GraphOrderState[order] == "PASS"); }
         public double GapMaximum { get { return BoundaryStatistic(x => x.Gap, true); } }
@@ -193,12 +198,12 @@ namespace Tommi.ContinuityTool
         public int ValidCount { get { return Samples.Count(x => x.Valid); } }
         public double Maximum(int order)
         {
-            var values = Samples.Where(x => x.Valid).Select(x => x.Difference(order)).ToArray();
+            var values = Samples.Where(x => x.SectionValid(order)).Select(x => x.Difference(order)).ToArray();
             return values.Length == 0 ? double.NaN : values.Max();
         }
         public double Mean(int order)
         {
-            var values = Samples.Where(x => x.Valid).Select(x => x.Difference(order)).ToArray();
+            var values = Samples.Where(x => x.SectionValid(order)).Select(x => x.Difference(order)).ToArray();
             return values.Length == 0 ? double.NaN : values.Average();
         }
         public static string Number(double v)
@@ -212,7 +217,7 @@ namespace Tommi.ContinuityTool
             get
             {
                 if (Samples.Any(x => x.Status == "RED")) return "RED";
-                if (Samples.Any(x => !x.G0Valid || !x.G1Valid || !x.Valid)) return "INCOMPLETE";
+                if (Samples.Any(x => !x.G0Valid || !x.G1Valid || !x.SectionValid(0))) return "INCOMPLETE";
                 if (Samples.Any(x => x.Status == "ORANGE")) return "ORANGE";
                 return "GREEN";
             }
@@ -237,9 +242,9 @@ namespace Tommi.ContinuityTool
         public string CurvatureDetails(double[] relativeTolerances, double[] absoluteTolerances)
         {
             var lines = new List<string>();
-            var valid = Samples.Where(x => x.Valid).ToArray();
             for (int order = 0; order < 3; order++)
             {
+                var valid = Samples.Where(x => x.SectionValid(order)).ToArray();
                 string name = "K" + (order+2);
                 if (valid.Length == 0) { lines.Add(name + ": INCOMPLETE - no valid samples."); continue; }
                 double relative = relativeTolerances[order], absolute = absoluteTolerances[order];
@@ -283,12 +288,22 @@ namespace Tommi.ContinuityTool
             output.Add("Sampled Graph G2="+GraphOrder(0)+", G3="+GraphOrder(1)+", G4="+GraphOrder(2)+"; GraphJet4 overall="+GraphState+" ("+valid.Length+"/"+Samples.Count+
                 " points). Every PASS is sample-only, never a globally certified seam.");
             output.Add("Coverage: " + SamplingNote);
-            if (valid.Length == 0)
+            // #SC-UI-05 EXPLAIN PARTIAL AVAILABILITY WITHOUT INVENTING A FAIL.
+            // A single missing jet can leave G4 UNKNOWN even when other stations
+            // pass. Previously its cause appeared only when EVERY jet was missing.
+            // Locate the first actual unavailable sample in report order, preserve
+            // the evaluator's reason verbatim, and leave raw jets/states untouched.
+            // This is one example location, not an exhaustive singularity map.
+            if (valid.Length < Samples.Count)
             {
-                var unavailable=Samples.FirstOrDefault(x=>!x.GraphValid);
-                if (unavailable!=null) output.Add("  Reason: "+unavailable.GraphReason);
-                return string.Join(Environment.NewLine,output);
+                var unavailable=Samples.First(x=>!x.GraphValid);
+                output.Add("  Graph jets unavailable: "+(Samples.Count-valid.Length)+"/"+Samples.Count+
+                    " | first unavailable #"+unavailable.Index+
+                    " | seam fraction="+DetailNumber(unavailable.Fraction)+
+                    " | XYZ=("+DetailNumber(unavailable.Point.X)+", "+DetailNumber(unavailable.Point.Y)+", "+DetailNumber(unavailable.Point.Z)+") model units"+
+                    " | Reason: "+(string.IsNullOrWhiteSpace(unavailable.GraphReason) ? "not supplied by evaluator." : unavailable.GraphReason));
             }
+            if (valid.Length == 0) return string.Join(Environment.NewLine,output);
             string[][] names = {
                 new [] {"h_xx","h_xy","h_yy"},
                 new [] {"h_xxx","h_xxy","h_xyy","h_yyy"},
@@ -317,7 +332,15 @@ namespace Tommi.ContinuityTool
                         " | "+fails+" failing samples | worst "+names[order][worstIndex-offset]+
                         " at #"+worst.Index+" | Δ="+DetailNumber(Math.Abs(a-b))+
                         " / allowance="+DetailNumber(ContinuityEvaluator.AllowedDifference(a,b,relativeTolerances[order],absoluteTolerances[order]))+
-                        " "+unit);
+                        " "+unit+
+                        // #SC-UI-04 LOCATE THE SAME SAMPLE THAT SET THE RATIO.
+                        // Index alone changes with adaptive refinement. Report
+                        // its physical location and arc-length fraction, rather
+                        // than confusing native edge parameter with distance.
+                        // This is the worst measured allowance ratio, not proof
+                        // that no larger defect exists between measured points.
+                        " | seam fraction="+DetailNumber(worst.Fraction)+
+                        " | XYZ=("+DetailNumber(worst.Point.X)+", "+DetailNumber(worst.Point.Y)+", "+DetailNumber(worst.Point.Z)+") model units");
                 }
                 offset+=order+3;
             }

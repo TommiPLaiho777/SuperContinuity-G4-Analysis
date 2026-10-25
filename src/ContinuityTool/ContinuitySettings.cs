@@ -29,14 +29,14 @@ namespace Tommi.ContinuityTool
         public static double gapTolerance = double.NaN, angleTolerance = double.NaN;
         private static uint toleranceDocument;
 
-        public static Result ReadOptions(RhinoDoc doc, out bool runAnalysis)
+        internal static void PrepareForDocument(RhinoDoc doc)
         {
-            runAnalysis = false;
-            if (doc == null) return Result.Failure;
-            if (toleranceDocument != doc.RuntimeSerialNumber || double.IsNaN(gapTolerance) || toleranceUnits != doc.ModelUnitSystem.ToString())
+            if (doc == null) return;
+            string context = ContinuityDocumentStore.ModelUnitContext(doc);
+            if (context == null || toleranceDocument != doc.RuntimeSerialNumber || double.IsNaN(gapTolerance) || toleranceUnits != context)
             {
                 toleranceDocument = doc.RuntimeSerialNumber;
-                toleranceUnits = doc.ModelUnitSystem.ToString();
+                toleranceUnits = context;
                 // Settings from a different open document must not leak here.
                 strict=false; customG2=5; customG3=10; customG4=15;
                 sampleCount=61; maximumSamples=220; knotAware=true; adaptive=true;
@@ -45,9 +45,16 @@ namespace Tommi.ContinuityTool
                 absK3 = absK4 = DefaultHighOrderAbsoluteTolerance;
                 gapTolerance = doc.ModelAbsoluteTolerance;
                 angleTolerance = doc.ModelAngleToleranceRadians * 180.0 / System.Math.PI;
-                // .3dm data is authoritative only when stored unit system matches.
+                // .3dm data is authoritative only when the full model-unit context matches.
                 ContinuityDocumentStore.RestoreSettings(doc);
             }
+        }
+
+        public static Result ReadOptions(RhinoDoc doc, out bool runAnalysis)
+        {
+            runAnalysis = false;
+            if (doc == null) return Result.Failure;
+            PrepareForDocument(doc);
             // Separate options from object selection so preselection cannot bypass settings.
             using (var options = new GetOption())
             {

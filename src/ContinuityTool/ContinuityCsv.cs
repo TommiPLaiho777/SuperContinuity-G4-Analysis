@@ -120,10 +120,10 @@ namespace Tommi.ContinuityTool
                         seam.G4DisplayState, seam.G4CoverageState, seam.GraphOrder(2), seam.GraphOrderPassedSamples(2),
                         seam.RawG1AnglePassedSamples(current.AngleTolerance), seam.RawK2PassedSamples,
                         "DIRECTED_TRIM_TO_TRIM_LOCAL", seam.PairedGapMaximum, seam.G0AtoBMaximum, seam.G0BtoAMaximum,
-                        seam.Samples.Count(x=>x.Valid && ContinuityEvaluator.AcceptanceBasis(x.A[0],x.B[0],current.Tolerances[0],current.AbsoluteTolerances[0])=="ABSOLUTE"),
-                        seam.Samples.Count(x=>x.Valid && ContinuityEvaluator.AcceptanceBasis(x.A[0],x.B[0],current.Tolerances[0],current.AbsoluteTolerances[0])=="RELATIVE"),
-                        seam.Samples.Count(x=>x.Valid && ContinuityEvaluator.AcceptanceBasis(x.A[0],x.B[0],current.Tolerances[0],current.AbsoluteTolerances[0])=="BOTH"),
-                        seam.Samples.Count(x=>x.Valid && !x.Pass[0]), "MAX_OF_ABSOLUTE_AND_RELATIVE_K2",
+                        seam.Samples.Count(x=>x.SectionValid(0) && ContinuityEvaluator.AcceptanceBasis(x.A[0],x.B[0],current.Tolerances[0],current.AbsoluteTolerances[0])=="ABSOLUTE"),
+                        seam.Samples.Count(x=>x.SectionValid(0) && ContinuityEvaluator.AcceptanceBasis(x.A[0],x.B[0],current.Tolerances[0],current.AbsoluteTolerances[0])=="RELATIVE"),
+                        seam.Samples.Count(x=>x.SectionValid(0) && ContinuityEvaluator.AcceptanceBasis(x.A[0],x.B[0],current.Tolerances[0],current.AbsoluteTolerances[0])=="BOTH"),
+                        seam.Samples.Count(x=>x.SectionValid(0) && !x.Pass[0]), "MAX_OF_ABSOLUTE_AND_RELATIVE_K2",
                         seam.KnotAuditState, seam.KnotAuditRows.Count,
                         seam.KnotAuditRows.Count(x=>x.State=="BOTH"),
                         seam.KnotAuditRows.Count(x=>x.State!="BOTH"),
@@ -135,11 +135,11 @@ namespace Tommi.ContinuityTool
                                 sample.Point.Z, sample.Step, sample.Status, sample.Reason };
                             for (int order=0; order<3; order++)
                             {
-                                cells.Add(sample.Valid ? sample.A[order] : double.NaN);
-                                cells.Add(sample.Valid ? sample.B[order] : double.NaN);
+                                cells.Add(sample.SectionValid(order) ? sample.A[order] : double.NaN);
+                                cells.Add(sample.SectionValid(order) ? sample.B[order] : double.NaN);
                                 cells.Add(sample.Difference(order));
                             }
-                            for (int order=0; order<3; order++) cells.Add(sample.Valid ? (object)sample.Pass[order] : null);
+                            for (int order=0; order<3; order++) cells.Add(sample.SectionValid(order) ? (object)sample.Pass[order] : null);
                             for (int order=0; order<3; order++) cells.Add(current.Tolerances[order]*100);
                             cells.AddRange(new object[] {
                                 sample.FirstIssue, sample.Gap, sample.AngleDegrees, sample.G0Valid, sample.G1Valid,
@@ -164,16 +164,16 @@ namespace Tommi.ContinuityTool
                                 ContinuityGrade.Name(ContinuityGrade.Of(sample)), seam.G4DisplayState, seam.G4CoverageState,
                                 seam.GraphOrder(2), seam.GraphOrderPassedSamples(2),
                                 sample.G1Valid ? (object)(sample.AngleDegrees <= current.AngleTolerance) : null,
-                                sample.Valid ? (object)sample.Pass[0] : null,
+                                sample.SectionValid(0) ? (object)sample.Pass[0] : null,
                                 sample.G0Measurement, sample.PairedSurfaceGap, sample.G0AtoB, sample.G0BtoA,
                                 sample.Difference(0),
-                                sample.Valid ? (Math.Max(Math.Abs(sample.A[0]),Math.Abs(sample.B[0]))>0 ?
+                                sample.SectionValid(0) ? (Math.Max(Math.Abs(sample.A[0]),Math.Abs(sample.B[0]))>0 ?
                                     100.0*sample.Difference(0)/Math.Max(Math.Abs(sample.A[0]),Math.Abs(sample.B[0])) :
                                     (sample.Difference(0)==0 ? 0 : double.PositiveInfinity)) : double.NaN,
-                                sample.Valid ? current.Tolerances[0]*Math.Max(Math.Abs(sample.A[0]),Math.Abs(sample.B[0])) : double.NaN,
+                                sample.SectionValid(0) ? current.Tolerances[0]*Math.Max(Math.Abs(sample.A[0]),Math.Abs(sample.B[0])) : double.NaN,
                                 current.AbsoluteTolerances[0],
-                                sample.Valid ? ContinuityEvaluator.AllowedDifference(sample.A[0],sample.B[0],current.Tolerances[0],current.AbsoluteTolerances[0]) : double.NaN,
-                                sample.Valid ? ContinuityEvaluator.AcceptanceBasis(sample.A[0],sample.B[0],current.Tolerances[0],current.AbsoluteTolerances[0]) : "UNAVAILABLE" });
+                                sample.SectionValid(0) ? ContinuityEvaluator.AllowedDifference(sample.A[0],sample.B[0],current.Tolerances[0],current.AbsoluteTolerances[0]) : double.NaN,
+                                sample.SectionValid(0) ? ContinuityEvaluator.AcceptanceBasis(sample.A[0],sample.B[0],current.Tolerances[0],current.AbsoluteTolerances[0]) : "UNAVAILABLE" });
                             for(int jet=0;jet<14;jet++)
                             {
                                 cells.Add(sample.GraphValid ? sample.GraphA[jet] : double.NaN);

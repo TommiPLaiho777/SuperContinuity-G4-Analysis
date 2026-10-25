@@ -74,7 +74,7 @@ namespace Tommi.ContinuityTool
             if (!s.G1Valid) return "INCOMPLETE";
             if (!s.G1Pass) return "FAIL";
             if (target <= 1) return "PASS";
-            if (!s.Valid) return "INCOMPLETE";
+            if (!s.SectionValid(0)) return "INCOMPLETE";
             if (s.SectionG2State == "FAIL") return "FAIL";
             if (s.SectionG2State != "PASS") return "INCOMPLETE";
             if (target <= 2) return "PASS";

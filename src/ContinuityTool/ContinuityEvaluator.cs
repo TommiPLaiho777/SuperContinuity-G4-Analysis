@@ -21,17 +21,18 @@ namespace Tommi.ContinuityTool
             sample.G0State = !sample.G0Valid ? "INCOMPLETE" : sample.G0Pass ? "PASS" : "FAIL";
             sample.G1State = !sample.G1Valid ? "INCOMPLETE" : sample.AngleDegrees > angleTolerance ? "FAIL" :
                 !sample.G0Valid ? "INCOMPLETE" : !sample.G0Pass ? "BLOCKED" : "PASS";
-            if (sample.Valid)
-                for (int order = 0; order < 3; order++)
-                    sample.Pass[order] = CheckContinuity(sample.A[order], sample.B[order],
-                        relativeTolerances[order], absoluteTolerances[order]);
-            sample.KState = !sample.Valid ? "INCOMPLETE" : !sample.Pass[0] ? "FAIL" :
-                !sample.Pass[1] || !sample.Pass[2] ? "WARNING" : "PASS";
+            if(sample.Pass==null || sample.Pass.Length!=3) sample.Pass=new bool[3];
+            for (int order = 0; order < 3; order++)
+                sample.Pass[order] = sample.SectionValid(order) && CheckContinuity(sample.A[order], sample.B[order],
+                    relativeTolerances[order], absoluteTolerances[order]);
+            sample.KState = !sample.SectionValid(0) ? "INCOMPLETE" : !sample.Pass[0] ? "FAIL" :
+                (sample.SectionValid(1) && !sample.Pass[1]) || (sample.SectionValid(2) && !sample.Pass[2]) ? "WARNING" :
+                !sample.Valid ? "INCOMPLETE" : "PASS";
 
             // This *sectional* G2 curvature test is comparable in scope to a cross-edge
             // curvature analysis, though it does not duplicate Rhino's exact metric.
             // In contrast to KState it does not require K3/K4. GraphJet is reported separately.
-            sample.SectionG2State = !sample.G0Valid || !sample.G1Valid || !sample.Valid ? "INCOMPLETE" :
+            sample.SectionG2State = !sample.G0Valid || !sample.G1Valid || !sample.SectionValid(0) ? "INCOMPLETE" :
                 !sample.G0Pass || !sample.G1Pass ? "BLOCKED" :
                 sample.Pass[0] ? "PASS" : "FAIL";
 
@@ -81,7 +82,7 @@ namespace Tommi.ContinuityTool
             // OVERVIEW is anchored to boundary continuity and section K2 only.
             // G3/G4 and strict Graph jets are valuable independent diagnostics,
             // but are not automatic assessments of the physical model's quality.
-            else if (!sample.G0Valid || !sample.G1Valid || !sample.Valid)
+            else if (!sample.G0Valid || !sample.G1Valid || !sample.SectionValid(0))
             { sample.Status="UNAVAILABLE"; sample.FirstIssue="INCOMPLETE"; }
             else if (!sample.Pass[0]) { sample.Status="ORANGE"; sample.FirstIssue="K2"; }
             else { sample.Status="GREEN"; sample.FirstIssue="PASS"; }
@@ -166,14 +167,12 @@ namespace Tommi.ContinuityTool
             }
             double[] a, b;
             string reasonA, reasonB;
-            bool validA = SectionJetEvaluator.Evaluate(faceA,report.TrimA,x,z,out a,out reasonA);
-            bool validB = SectionJetEvaluator.Evaluate(faceB,report.TrimB,x,z,out b,out reasonB);
-            if (!validA || !validB)
-            { report.Reason = (!validA ? "Face A: "+reasonA+" " : "") + (!validB ? "Face B: "+reasonB : ""); return; }
+            SectionJetEvaluator.EvaluateAvailableOrders(faceA,report.TrimA,x,z,out a,out reasonA);
+            SectionJetEvaluator.EvaluateAvailableOrders(faceB,report.TrimB,x,z,out b,out reasonB);
             report.A = a;
             report.B = b;
             report.Pass = new bool[3];
-            report.Reason = "";
+            report.Reason = (!string.IsNullOrEmpty(reasonA) ? "Face A: "+reasonA+" " : "") + (!string.IsNullOrEmpty(reasonB) ? "Face B: "+reasonB : "");
         }
     }
 }

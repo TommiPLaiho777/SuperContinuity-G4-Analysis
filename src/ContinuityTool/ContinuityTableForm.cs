@@ -342,7 +342,9 @@ namespace Tommi.ContinuityTool
             if (filter.SelectedIndex != 0 && filter.SelectedIndex != 11) seams = seams.Where(x => !x.ReviewExcluded);
             switch (filter.SelectedIndex)
             {
-                case 1: seams = seams.Where(x => x.Status != "GREEN" || x.G4DisplayState.StartsWith("G4 UNKNOWN",StringComparison.Ordinal)); break;
+                // Lower-order overview GREEN does not cancel an observed G4
+                // counterexample. Keep that seam visible alongside UNKNOWN.
+                case 1: seams = seams.Where(x => x.Status != "GREEN" || x.G4DisplayState.StartsWith("G4 UNKNOWN",StringComparison.Ordinal) || x.G4DisplayState == "G4 FAIL"); break;
                 case 2: seams = seams.Where(x => x.Status == "RED"); break;
                 case 3: seams = seams.Where(x => x.Status == "ORANGE"); break;
                 case 4: seams = seams.Where(x => x.CompleteCount != x.Samples.Count); break;
@@ -351,7 +353,11 @@ namespace Tommi.ContinuityTool
                 case 7: seams = seams.Where(x => x.SectionG2 == "PASS"); break;
                 case 8: seams = seams.Where(x => x.GraphOrder(0) == "PASS"); break;
                 case 9: seams = seams.Where(x => x.GraphOrder(1) == "PASS"); break;
-                case 10: seams = seams.Where(x => x.GraphOrder(2) == "PASS"); break;
+                // #SC-EVIDENCE-03 A PASS FILTER USES THE PRESENTED G4 DECISION.
+                // Raw pointwise PASS survives for diagnostics, but cannot place
+                // an incomplete audited seam among user-facing G4 PASS results.
+                // DisplayState also preserves FAIL and cap-only policy.
+                case 10: seams = seams.Where(x => x.DisplayState("GraphG4") == "PASS"); break;
                 case 11: seams = seams.Where(x => x.ReviewExcluded); break;
             }
             string query = (search.Text ?? "").Trim();

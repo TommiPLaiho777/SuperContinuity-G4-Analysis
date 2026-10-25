@@ -24,7 +24,53 @@ namespace Tommi.ContinuityTool
         public static bool Evaluate(Surface surface, Point3d uv, Vector3d x, Vector3d z,
             out double[] values, out string reason)
         {
+            if (!EvaluateAvailableOrders(surface,uv,x,z,out values,out reason))
+            { values=null; return false; }
+            foreach(double value in values)
+                if(!SampleReportV9.Finite(value)) { values=null; return false; }
+            return true;
+        }
+
+        // #SC-MATH-13 ORDER-SPECIFIC AVAILABILITY, NOT A ZERO OR A FAIL.
+        // At an original NURBS knot of degree p and multiplicity m, C^(p-m)
+        // is guaranteed. A C3 knot can retain unique k and dk/ds while d2k/ds2
+        // is not established. Do not discard valid G2 because K4 is missing.
+        // This conservative guarantee does not exploit special cancellations
+        // or directions tangent to a knot. Native one-sided higher values are
+        // masked with NaN before leaving this method, never presented as unique.
+        // Evaluate still requires all orders; the analyzer uses this partial API.
+        public static bool EvaluateAvailableOrders(Surface surface, Point3d uv, Vector3d x, Vector3d z,
+            out double[] values, out string reason)
+        {
+            if(!EvaluateRaw(surface,uv,x,z,out values,out reason)) return false;
+            int guaranteed=4;
+            var face=surface as BrepFace;
+            var nurbs=(face==null ? surface : face.UnderlyingSurface()) as NurbsSurface;
+            if(nurbs!=null)
+                for(int direction=0;direction<2;direction++)
+                {
+                    var knots=direction==0 ? nurbs.KnotsU : nurbs.KnotsV;
+                    var domain=nurbs.Domain(direction);
+                    double parameter=direction==0 ? uv.X : uv.Y;
+                    int multiplicity=0;
+                    for(int i=0;i<knots.Count;i++)
+                        if(knots[i]>domain.T0 && knots[i]<domain.T1 && knots[i]==parameter) multiplicity++;
+                    if(multiplicity>0) guaranteed=Math.Min(guaranteed,nurbs.Degree(direction)-multiplicity);
+                }
+            if(guaranteed<4)
+            {
+                for(int order=0;order<3;order++)
+                    if(order+2>guaranteed) values[order]=double.NaN;
+                reason="Internal surface knot: section derivatives above order "+guaranteed+" are not established; unavailable orders are blank, not zero.";
+            }
+            return SampleReportV9.Finite(values[0]);
+        }
+
+        private static bool EvaluateRaw(Surface surface, Point3d uv, Vector3d x, Vector3d z,
+            out double[] values, out string reason)
+        {
             values = null;
+            if(surface==null) { reason="Invalid section surface."; return false; }
             // At an internal knot, native evaluation may choose one side. Do not silently
             // report that side as a unique fourth-order derivative.
             if (uv.IsValid && !surface.IsContinuous(Continuity.Cinfinity_continuous, uv.X, uv.Y))

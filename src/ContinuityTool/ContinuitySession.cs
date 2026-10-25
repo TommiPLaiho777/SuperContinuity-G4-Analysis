@@ -14,6 +14,22 @@ namespace Tommi.ContinuityTool
         static ContinuitySessionV9()
         {
             RhinoDoc.CloseDocument += (sender,e) => { if (e.Document != null) Clear(e.Document, false); };
+            RhinoDoc.DocumentPropertiesChanged += (sender,e) =>
+            {
+                AllSeamsConduitV9 current;
+                // #SC-STATE-01 DIMENSIONAL MEASUREMENTS BELONG TO THEIR MODEL UNITS.
+                // A unit change without scaling does not replace source objects,
+                // so geometry events alone leave an enabled report with old units.
+                // Gap and order-n derivatives have units L and L^(1-n): require a
+                // fresh analysis rather than relabeling or partly converting them.
+                // Other property changes retain the explicit analysis thresholds.
+                if (e.Document != null && Sessions.TryGetValue(e.Document.RuntimeSerialNumber, out current) &&
+                    !ModelUnitsMatch(e.Document, current))
+                {
+                    Clear(e.Document);
+                    RhinoApp.WriteLine("Continuity results cleared: model units changed. Rerun ContinuityAllSeams9.");
+                }
+            };
             RhinoDoc.ReplaceRhinoObject += (sender,e) => Invalidate(e.Document, e.ObjectId);
             RhinoDoc.DeleteRhinoObject += (sender,e) =>
             {
@@ -29,6 +45,19 @@ namespace Tommi.ContinuityTool
         {
             current = null;
             return doc != null && Sessions.TryGetValue(doc.RuntimeSerialNumber, out current);
+        }
+        private static bool ModelUnitsMatch(RhinoDoc doc, AllSeamsConduitV9 current)
+        {
+            if (current.UnitName != doc.ModelUnitSystem.ToString()) return false;
+            if (doc.ModelUnitSystem != UnitSystem.CustomUnits) return true;
+            // #SC-STATE-02 THE CUSTOMUNITS ENUM DOES NOT IDENTIFY A UNIT.
+            // Rhino can change meters-per-unit (or its name) while retaining the
+            // enum and every source coordinate. Compare the native snapshot too;
+            // if its identity cannot be read, do not retain dimensional evidence.
+            string name;
+            double meters;
+            return current.HasCustomUnitContext && doc.GetCustomUnitSystem(true, out name, out meters) &&
+                current.CustomUnitName == name && current.CustomMetersPerUnit == meters;
         }
         private static void Invalidate(RhinoDoc doc, Guid id)
         {
@@ -53,6 +82,8 @@ namespace Tommi.ContinuityTool
         {
             Clear(doc, false);
             current.SourceDocument = doc;
+            current.HasCustomUnitContext = doc.ModelUnitSystem == UnitSystem.CustomUnits &&
+                doc.GetCustomUnitSystem(true, out current.CustomUnitName, out current.CustomMetersPerUnit);
             Sessions[doc.RuntimeSerialNumber] = current;
             current.Enabled = true;
         }
